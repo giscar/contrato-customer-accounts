@@ -1,0 +1,153 @@
+description: >
+  Capa 1 - Estructura OpenAPI/Spectral. Extiende el estandar OpenAPI de
+  Spectral y agrega buenas practicas basicas de contrato: metadatos, paths,
+  operaciones, seguridad, respuestas y nomenclatura.
+
+extends: ["spectral:oas"]
+
+formats:
+  - oas3
+  - oas3.0
+  - oas3.1
+
+aliases:
+  Path_Item:
+    description: "Todos los path items del documento."
+    targets:
+      - formats: [oas3]
+        given:
+          - "$.paths[*]"
+  Operation_Object:
+    description: "Todas las operaciones (get, put, post, delete, options, head, patch, trace)."
+    targets:
+      - formats: [oas3]
+        given:
+          - "#Path_Item[get,put,post,delete,options,head,patch,trace]"
+
+rules:
+  gob-f01-info-descripcion:
+    description: "[GOB-F01] info.description es obligatoria y debe explicar el proposito de la API."
+    severity: error
+    given: "$.info"
+    then:
+      field: description
+      function: truthy
+
+  gob-f02-operacion-descripcion:
+    description: "[GOB-F02] Toda operacion debe tener description."
+    severity: error
+    given: "#Operation_Object"
+    then:
+      field: description
+      function: truthy
+
+  gob-f03-contacto-completo:
+    description: "[GOB-F03] info.contact debe declarar nombre y email del equipo responsable."
+    severity: error
+    given: "$.info"
+    then:
+      - field: contact.name
+        function: truthy
+      - field: contact.email
+        function: truthy
+
+  gob-f04-tags-descritos:
+    description: "[GOB-F04] Todo tag global debe tener name y description."
+    severity: error
+    given: "$.tags[*]"
+    then:
+      - field: name
+        function: truthy
+      - field: description
+        function: truthy
+
+  gob-f05-operacion-tags:
+    description: "[GOB-F05] Toda operacion debe asociarse al menos a un tag declarado."
+    severity: error
+    given: "#Operation_Object"
+    then:
+      field: tags
+      function: schema
+      functionOptions:
+        schema:
+          type: array
+          minItems: 1
+
+  gob-f06-seguridad-declarada:
+    description: "[GOB-F06] El contrato debe declarar securitySchemes y security para que autenticacion/autorizacion sea visible por herramientas OpenAPI."
+    severity: error
+    given: "$"
+    then:
+      - field: components.securitySchemes
+        function: truthy
+      - field: security
+        function: truthy
+
+  gob-f07-respuesta-exitosa:
+    description: "[GOB-F07] Toda operacion debe declarar al menos una respuesta exitosa estandar (200, 201, 202 o 204)."
+    severity: error
+    given: "#Operation_Object.responses"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          anyOf:
+            - required: ["200"]
+            - required: ["201"]
+            - required: ["202"]
+            - required: ["204"]
+
+  gob-f08-paths-kebab:
+    description: "[GOB-F08] Los paths usan recursos en kebab-case, sin version en el path."
+    severity: error
+    given: "$.paths[*]~"
+    then:
+      function: pattern
+      functionOptions:
+        match: "^(/([a-z][a-z0-9-]*|\\{[a-zA-Z][a-zA-Z0-9]*\\}))+$"
+
+  gob-f09-operationid-camel:
+    description: "[GOB-F09] operationId es obligatorio, camelCase y con verbo inicial permitido."
+    severity: error
+    given: "#Operation_Object"
+    then:
+      - field: operationId
+        function: truthy
+      - field: operationId
+        function: casing
+        functionOptions:
+          type: camel
+      - field: operationId
+        function: pattern
+        functionOptions:
+          match: "^(get|list|retrieve|register|create|update|delete|execute|initiate|control|exchange|request|grant|provide|capture|evaluate|notify)[A-Z][A-Za-z0-9]*$"
+
+  gob-f10-summary-oracion:
+    description: "[GOB-F10] Toda operacion debe tener summary: una oracion corta terminada en punto."
+    severity: error
+    given: "#Operation_Object"
+    then:
+      - field: summary
+        function: truthy
+      - field: summary
+        function: pattern
+        functionOptions:
+          match: '\.$'
+
+  gob-f11-schemas-pascal:
+    description: "[GOB-F11] Los nombres de schemas en components deben estar en PascalCase."
+    severity: error
+    given: "$.components.schemas[*]~"
+    then:
+      function: casing
+      functionOptions:
+        type: pascal
+
+  gob-f12-propiedades-descritas:
+    description: "[GOB-F12] Toda propiedad de un schema debe tener description."
+    severity: warn
+    given: "$.components.schemas[*].properties[*]"
+    then:
+      field: description
+      function: truthy

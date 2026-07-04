@@ -1,0 +1,172 @@
+description: >
+  Capa 2 - Validaciones funcionales codificables y trazabilidad BIAN. Esta capa
+  no reemplaza el juicio del gobierno de APIs: automatiza lo repetible y deja
+  como advisory lo que requiere criterio humano.
+
+formats:
+  - oas3
+  - oas3.0
+  - oas3.1
+
+aliases:
+  Path_Item:
+    description: "Todos los path items del documento."
+    targets:
+      - formats: [oas3]
+        given:
+          - "$.paths[*]"
+  Operation_Object:
+    description: "Todas las operaciones (get, put, post, delete, options, head, patch, trace)."
+    targets:
+      - formats: [oas3]
+        given:
+          - "#Path_Item[get,put,post,delete,options,head,patch,trace]"
+
+rules:
+  gob-010-api-type-declarado:
+    description: "[GOB-010] El contrato debe declarar el tipo de API en x-org-api-type (UX, BS/BUSINESS, CR, PR/PARTNER)."
+    severity: error
+    given: "$"
+    then:
+      - field: x-org-api-type
+        function: truthy
+      - field: x-org-api-type
+        function: enumeration
+        functionOptions:
+          values:
+            - UX
+            - BS
+            - BUSINESS
+            - CR
+            - PR
+            - PARTNER
+
+  gob-011-api-id-kebab:
+    description: "[GOB-011] El contrato debe declarar su identificador en x-org-api-id, en kebab-case."
+    severity: error
+    given: "$"
+    then:
+      - field: x-org-api-id
+        function: truthy
+      - field: x-org-api-id
+        function: casing
+        functionOptions:
+          type: kebab
+
+  gob-012-server-url-taxonomia:
+    description: "[GOB-012] La URL del server sigue la taxonomia /channel-{api-id}/v{n}; la version de la API vive aqui, no en los paths."
+    severity: error
+    given: "$.servers[*].url"
+    then:
+      function: pattern
+      functionOptions:
+        match: "^/channel-[a-z0-9-]+/v[0-9]+$"
+
+  gob-013-descripcion-secciones-template:
+    description: "[GOB-013] La description de cada operacion debe contener las secciones obligatorias del template corporativo. Usar 'No aplica.' cuando corresponda."
+    severity: error
+    given: "#Operation_Object"
+    then:
+      field: description
+      function: pattern
+      functionOptions:
+        match: '/### Seguridad[\s\S]*### Acerca de la funcionalidad expuesta[\s\S]*### Precondiciones para el consumo[\s\S]*### Usos válidos de Query Parameters[\s\S]*### Variantes válidas del Payload[\s\S]*### Lista de valores/'
+
+  gob-014-respuestas-error-estandar:
+    description: "[GOB-014] Toda operacion debe definir el catalogo estandar de errores: 400, 401, 403 y 404."
+    severity: error
+    given: "#Operation_Object.responses"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          required: ["400", "401", "403", "404"]
+
+  gob-015-dominios-declarados:
+    description: "[GOB-015] (Propuesta) La API debe declarar sus dominios de negocio en info.x-domains."
+    severity: warn
+    given: "$.info"
+    then:
+      - field: x-domains
+        function: truthy
+      - field: x-domains
+        function: schema
+        functionOptions:
+          schema:
+            type: array
+            minItems: 1
+            items:
+              enum:
+                - Clientes
+                - Cuentas
+                - Tarjetas
+                - Prestamos
+                - Lealtad
+
+  gob-016-apis-negocio-declaradas:
+    description: "[GOB-016] (Propuesta) Cada operacion de una API UX declara en x-business-apis que APIs de Negocio invoca."
+    severity: warn
+    given: "#Operation_Object"
+    then:
+      field: x-business-apis
+      function: truthy
+
+  gob-017-bian-service-domains:
+    description: "[GOB-017] La API declara trazabilidad a Service Domains BIAN. En BS/CR/PR debe ser alineamiento directo; en UX puede ser trazabilidad a las capacidades orquestadas."
+    severity: warn
+    given: "$"
+    then:
+      field: x-bian-service-domains
+      function: schema
+      functionOptions:
+        schema:
+          type: array
+          minItems: 1
+          items:
+            enum:
+              # Lista ilustrativa para demo; reemplazar por export oficial BIAN vigente.
+              - Customer Agreement
+              - Customer Offer
+              - Customer Profile
+              - Customer Position
+              - Party Data Management
+              - Product Matching
+              - Current Account
+              - Payment Order
+              - Card Authorization
+              - Customer Event History
+
+  gob-018-operacion-bian-service-domain:
+    description: "[GOB-018] Cada operacion declara el Service Domain BIAN principal o trazado."
+    severity: warn
+    given: "#Operation_Object"
+    then:
+      field: x-bian-service-domain
+      function: enumeration
+      functionOptions:
+        values:
+          - Customer Agreement
+          - Customer Offer
+          - Customer Profile
+          - Customer Position
+          - Party Data Management
+          - Product Matching
+          - Current Account
+          - Payment Order
+          - Card Authorization
+          - Customer Event History
+
+  gob-019-operacion-bian-alignment:
+    description: "[GOB-019] Cada operacion declara su tipo de alineamiento BIAN: direct para BS/CR/PR, traceability/adapted para UX o APIs de canal."
+    severity: warn
+    given: "#Operation_Object"
+    then:
+      field: x-bian-alignment
+      function: enumeration
+      functionOptions:
+        values:
+          - direct
+          - adapted
+          - traceability
+          - exempted

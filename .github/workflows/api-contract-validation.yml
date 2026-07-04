@@ -1,0 +1,101 @@
+name: api-contract-validation
+
+# Kit de onboarding: este workflow llega a cada repositorio de contrato
+# generado por Deploy Go/template al crear el repo de API. No requiere carga
+# manual de .github: el repo queda validándose en el siguiente push.
+#
+# En la empresa este flujo corre sobre GitHub Actions dentro del proceso
+# corporativo "Deploy Go": las capas 1 y 2 son deterministas (sin IA).
+#
+# Fase actual: se ejecuta en el PR que toque el contrato (api/). El evento
+# pull_request se re-ejecuta con cada push a la rama del PR, así que cada
+# push recibe feedback sin duplicar ejecuciones. No se valida en push directo:
+# la política corporativa limita la cantidad de pushes, por lo que el ciclo
+# corto de corrección debe ocurrir ANTES de pushear, con lint local
+# (ver README: npx spectral lint con los mismos rulesets) y Copilot en el IDE.
+# Para bloquear la promoción, proteger la rama principal y exigir este check
+# antes del merge. GitHub Actions no impide abrir el PR; impide que un
+# cambio avance si el check requerido falla.
+on:
+  pull_request:
+    paths:
+      - "api/**/*.yml"
+      - "api/**/*.yaml"
+  workflow_dispatch:
+  # schedule:
+  #   - cron: "0 6 * * 1" # re-validación semanal de contratos ya aprobados
+
+jobs:
+  # ── Capas 1 y 2: estructura + funcional codificable (bloqueante) ──────
+  validar-contrato:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # OPCIÓN FUTURA (repo central de reglas): en lugar de usar la copia
+      # local .github/rules, consumir siempre la última versión
+      # aprobada por gobierno desde el repo central:
+      #
+      # - uses: actions/checkout@v4
+      #   with:
+      #     repository: <org>/api-governance-rules
+      #     path: .governance
+      #     token: ${{ secrets.GOVERNANCE_REPO_TOKEN }}
+      #
+      # ...y en los pasos siguientes: --ruleset .governance/rules/<capa>.yml
+
+      # La herramienta se descarga efímera en el runner; el repo no contiene
+      # código ni dependencias — solo YAML (reglas, contrato, workflow).
+      - name: Capa 1 · Estructura OpenAPI + Spectral
+        run: >
+          npx --yes @stoplight/spectral-cli@6 lint "api/**/*.{yml,yaml}"
+          --ruleset .github/rules/01-estructura.yml
+          --format github-actions
+          --fail-severity error
+
+      - name: Capa 2 · Validaciones funcionales + BIAN
+        run: >
+          npx --yes @stoplight/spectral-cli@6 lint "api/**/*.{yml,yaml}"
+          --ruleset .github/rules/02-funcional-bian.yml
+          --format github-actions
+          --fail-severity error
+
+  # ── Capa 3: pre-revisión semántica con Copilot (advisory) ───────────
+  # Esta capa TAMBIÉN forma parte de Deploy Go: es otro job del mismo
+  # workflow corporativo, no un proceso ajeno. DESACTIVADA hasta contar con
+  # aprobación de seguridad y el mecanismo corporativo homologado para
+  # comentar PRs con Copilot.
+  # Cuando exista, este job:
+  #   1. Lee el contrato del PR y el catálogo de reglas semánticas
+  #   2. Invoca Copilot corporativo con el prompt de pre-revisión
+  #   3. Publica las observaciones como comentario del PR (github-script)
+  #   4. continue-on-error: true — NUNCA bloquea el merge
+  #
+  # pre-revision-semantica:
+  #   runs-on: ubuntu-latest
+  #   continue-on-error: true
+  #   if: ${{ vars.COPILOT_ADVISORY_HABILITADO == 'true' }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Evaluar contrato contra catálogo de reglas semánticas
+  #       run: echo "pendiente de aprobación de seguridad"
+  #     - name: Comentar observaciones en el PR
+  #       uses: actions/github-script@v7
+  #       with:
+  #         script: |
+  #           // github.rest.issues.createComment({ ... })
+
+  # ── Autoajuste asistido (futuro): patch aceptado por el developer ─────
+  # DESACTIVADO hasta definir permisos del bot y lista de reglas autofix.
+  # Flujo esperado:
+  #   1. Lee el resultado JSON de Spectral y las observaciones Copilot.
+  #   2. Genera un diff solo para reglas mecánicas y seguras.
+  #   3. Comenta el PR con el diff y espera aceptación explícita:
+  #      /aplicar-fixes-contrato
+  #   4. Si el developer acepta, commitea en la misma rama del PR o abre un
+  #      PR auxiliar contra la rama del developer.
+  #   5. Deploy Go vuelve a ejecutar validar-contrato.

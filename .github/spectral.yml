@@ -1,0 +1,8 @@
+description: >
+  Ruleset completo de validacion de contratos OpenAPI. Mantiene compatibilidad
+  con herramientas que esperan un unico archivo, pero internamente separa Capa 1
+  (estructura OpenAPI/Spectral) y Capa 2 (validaciones funcionales y BIAN).
+
+extends:
+  - ./rules/01-estructura.yml
+  - ./rules/02-funcional-bian.yml

@@ -1,0 +1,277 @@
+openapi: 3.0.1
+info:
+  title: API UX Loyalty Rewards V1
+  description: |
+    API de Experiencia (UX) para el canal digital. Expone la consulta de acuerdos
+    del programa de lealtad del cliente y el registro de canjes de puntos.
+    Contrato de ejemplo con datos ficticios que replica la estructura del
+    modelo de contrato corporativo.
+  version: "1.0.0"
+  contact:
+    name: Equipo Canal Digital (ficticio)
+    email: canal-digital@example.com
+  x-domains:
+    - Lealtad
+servers:
+  - url: "/channel-customer-accounts/v1"
+x-org-api-type: "UX"
+x-org-api-id: customer-accounts
+x-bian-service-domains:
+  - Customer Agreement
+  - Customer Offer
+security:
+  - bearerAuth: []
+    xAuthToken: []
+externalDocs:
+  url: "/"
+  description: "Más información"
+tags:
+  - name: RewardAgreement
+    description: RewardAgreement Controller.
+  - name: RewardRedemption
+    description: RewardRedemption Controller.
+paths:
+  /reward-agreements:
+    get:
+      tags:
+        - RewardAgreement
+      operationId: getRewardAgreements
+      summary: Consultar la lista de acuerdos vigentes del programa de lealtad.
+      description: |
+        ### Seguridad
+        - Este endpoint requiere autenticación mediante JWT (Authorization: Bearer) y x-auth-token.
+        - El consumo debe realizarse exclusivamente sobre HTTPS.
+        - No se debe exponer información sensible en logs ni respuestas.
+
+        ### Acerca de la funcionalidad expuesta
+        Permite consultar los acuerdos vigentes del programa de lealtad del cliente.
+
+        ### Precondiciones para el consumo de esta versión de la API
+        No aplica.
+
+        ### Usos válidos de Query Parameters
+        No aplica.
+
+        ### Variantes válidas del Payload (Cuerpo del mensaje)
+        No aplica.
+
+        ### Lista de valores usadas en esta versión de la API
+        No aplica.
+      x-business-apis:
+        - loyalty-business/v1/list-agreements
+      x-bian-service-domain: Customer Agreement
+      x-bian-alignment: traceability
+      parameters:
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/x-auth-token"
+      responses:
+        "200":
+          description: "Lista de acuerdos del programa de lealtad."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RewardAgreementListResponse"
+        "400":
+          description: "La solicitud contiene parámetros inválidos."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiException"
+        "401":
+          description: "No autenticado o token inválido."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiException"
+        "403":
+          description: "No tiene los permisos necesarios para ejecutar esta operación."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiException"
+        "404":
+          description: "No se encontró la URI del recurso solicitado."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiException"
+  /reward-redemptions:
+    post:
+      tags:
+        - RewardRedemption
+      operationId: registerRewardRedemption
+      summary: Registrar el canje de puntos del programa de lealtad del cliente.
+      description: |
+        ### Seguridad
+        - Este endpoint requiere autenticación mediante JWT (Authorization: Bearer) y x-auth-token.
+        - El consumo debe realizarse exclusivamente sobre HTTPS.
+        - No se debe exponer información sensible en logs ni respuestas.
+        - Los datos sensibles deben enviarse cifrados según lineamientos de seguridad.
+
+        ### Acerca de la funcionalidad expuesta
+        Permite registrar el canje de puntos de un cliente contra un acuerdo vigente.
+
+        ### Precondiciones para el consumo de esta versión de la API
+        El cliente debe tener un acuerdo vigente del programa de lealtad.
+
+        ### Usos válidos de Query Parameters
+        No aplica.
+
+        ### Variantes válidas del Payload (Cuerpo del mensaje)
+        No aplica.
+
+        ### Lista de valores usadas en esta versión de la API
+        No aplica.
+      x-business-apis:
+        - loyalty-business/v1/register-redemption
+      x-bian-service-domain: Customer Offer
+      x-bian-alignment: traceability
+      parameters:
+        - $ref: "#/components/parameters/Authorization"
+        - $ref: "#/components/parameters/x-auth-token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RewardRedemptionRequest"
+      responses:
+        "201":
+          description: "Canje registrado correctamente."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RewardRedemptionResponse"
+        "400":
+          description: "La solicitud contiene parámetros inválidos."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiException"
+        "401":
+          description: "No autenticado o token inválido."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiException"
+        "403":
+          description: "No tiene los permisos necesarios para ejecutar esta operación."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiException"
+        "404":
+          description: "No se encontró la URI del recurso solicitado."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiException"
+        "409":
+          description: "Ocurrió un error al validar las reglas de negocio."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiException"
+        "409":
+          description: "Ocurrió un error al validar las reglas de negocio."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiException"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Autenticación mediante token JWT en el header Authorization."
+    xAuthToken:
+      type: apiKey
+      in: header
+      name: x-auth-token
+      description: "Token de sesión requerido por la plataforma."
+  parameters:
+    Authorization:
+      name: Authorization
+      in: header
+      description: "Token de autorización en formato Bearer. Obligatorio; autentica la solicitud."
+      required: true
+      style: simple
+      explode: false
+      schema:
+        type: string
+        example: "Bearer {jwt_token}"
+    x-auth-token:
+      name: x-auth-token
+      in: header
+      description: "Token de sesión del usuario. Obligatorio; autentica y autoriza la solicitud."
+      required: true
+      style: simple
+      explode: false
+      schema:
+        type: string
+        example: "a145555d-0000-49e2-a553-000000000000"
+  schemas:
+    RewardAgreementListResponse:
+      title: RewardAgreementListResponse
+      description: "Lista de acuerdos vigentes del programa de lealtad del cliente."
+      type: object
+      properties:
+        rewardAgreementList:
+          type: array
+          description: "Lista de acuerdos vigentes del programa de lealtad."
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/RewardAgreementDetail"
+    RewardAgreementDetail:
+      type: object
+      description: "Detalle de un acuerdo del programa de lealtad."
+      properties:
+        rewardAgreementId:
+          type: integer
+          description: "Identificador del acuerdo del cliente."
+          example: 127
+        documentVersionId:
+          type: integer
+          description: "Identificador único de la versión del documento."
+          example: 2
+        agreementStatus:
+          type: string
+          description: "Estado del acuerdo."
+          example: "VIGENTE"
+    RewardRedemptionRequest:
+      type: object
+      description: "Solicitud de canje de puntos del cliente."
+      required:
+        - rewardAgreementId
+        - points
+      properties:
+        rewardAgreementId:
+          type: integer
+          description: "Identificador del acuerdo contra el cual se canjea."
+          example: 127
+        points:
+          type: integer
+          description: "Cantidad de puntos a canjear."
+          example: 500
+    RewardRedemptionResponse:
+      type: object
+      description: "Resultado del registro del canje."
+      properties:
+        rewardRedemptionId:
+          type: string
+          format: uuid
+          description: "Identificador del canje registrado."
+          example: "550e8400-0000-41d4-a716-000000000000"
+    ApiException:
+      type: object
+      description: "Estructura estándar de error de la plataforma."
+      properties:
+        code:
+          type: string
+          description: "Código de error de la plataforma."
+          example: "TL0001"
+        message:
+          type: string
+          description: "Mensaje descriptivo del error."
+          example: "La solicitud contiene parámetros inválidos."
