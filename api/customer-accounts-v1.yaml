@@ -89,6 +89,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiException"
+        "404":
+          description: "No se encontró la URI del recurso solicitado."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiException"
   /reward-redemptions:
     post:
       tags:
