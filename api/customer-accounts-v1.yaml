@@ -59,7 +59,7 @@ paths:
         No aplica.
       x-business-apis:
         - loyalty-business/v1/list-agreements
-      x-bian-service-domain: Customer Agreement
+      x-bian-service-domain: Card Authorization 
       x-bian-alignment: traceability
       parameters:
         - $ref: "#/components/parameters/Authorization"
@@ -109,7 +109,9 @@ paths:
         - Los datos sensibles deben enviarse cifrados según lineamientos de seguridad.
 
         ### Acerca de la funcionalidad expuesta
-        Permite registrar el canje de puntos de un cliente contra un acuerdo vigente.
+        Permite registrar el canje. La API calcula el descuento: si el cliente
+        tiene más de 1000 puntos aplica 10%, y decide si aprueba o rechaza el
+        canje según el segmento del cliente.
 
         ### Precondiciones para el consumo de esta versión de la API
         El cliente debe tener un acuerdo vigente del programa de lealtad.
@@ -124,7 +126,7 @@ paths:
         No aplica.
       x-business-apis:
         - loyalty-business/v1/register-redemption
-      x-bian-service-domain: Customer Offer
+      x-bian-service-domain: Card Authorization 
       x-bian-alignment: traceability
       parameters:
         - $ref: "#/components/parameters/Authorization"
