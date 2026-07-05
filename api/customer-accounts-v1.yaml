@@ -13,8 +13,8 @@ info:
   x-domains:
     - Lealtad
 servers:
-  - url: "/channel-customer-accounts/v1"
-x-org-api-type: "UX"
+  - url: "/customer-accounts/v1"
+x-org-api-type: "EXPERIENCIA"
 x-org-api-id: customer-accounts
 x-bian-service-domains:
   - Customer Agreement
@@ -59,7 +59,7 @@ paths:
         No aplica.
       x-business-apis:
         - loyalty-business/v1/list-agreements
-      x-bian-service-domain: Customer Agreement
+      x-bian-service-domain: Dominio Inventado
       x-bian-alignment: traceability
       parameters:
         - $ref: "#/components/parameters/Authorization"
